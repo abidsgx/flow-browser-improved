@@ -3,7 +3,7 @@ import { TabBoundsController, isRectangleEqual } from "./bounds";
 import { TabLifecycleManager } from "./tab-lifecycle";
 import { getCurrentTimestamp } from "@/modules/utils";
 import { TabGroupMode } from "~/types/tabs";
-import { type LayerType } from "~/layers";
+import { ViewLayer } from "~/layers";
 import { Rectangle } from "electron";
 import { type TabsController } from "./index";
 
@@ -87,9 +87,9 @@ export class TabLayoutManager {
     const window = tab.getWindow();
 
     // Sync view visibility (only if view exists — sleeping tabs have no view)
-    const wasVisible = tab.layer ? tab.layer.isVisible() : false;
-    if (tab.layer && wasVisible !== visible) {
-      tab.layer.setVisible(visible);
+    const wasVisible = tab.view ? tab.view.getVisible() : false;
+    if (tab.view && wasVisible !== visible) {
+      tab.view.setVisible(visible);
 
       // Handle PiP transitions on visibility change
       if (visible) {
@@ -140,7 +140,7 @@ export class TabLayoutManager {
     } else {
       pageBounds = window.pageBounds;
     }
-    const borderRadius = tab.fullScreen ? 0 : 6;
+    const borderRadius = tab.fullScreen ? 0 : 8;
     if (borderRadius !== this.lastBorderRadius && tab.view) {
       tab.view.setBorderRadius(borderRadius);
       this.lastBorderRadius = borderRadius;
@@ -151,7 +151,7 @@ export class TabLayoutManager {
     const lastTabGroupMode = this.lastTabGroupMode;
     let newBounds: Rectangle | null = null;
     let newTabGroupMode: TabGroupMode | null = null;
-    let layerType: LayerType = "tab";
+    let zIndex: number = ViewLayer.TAB;
 
     if (!tabGroup) {
       newTabGroupMode = "normal";
@@ -161,14 +161,14 @@ export class TabLayoutManager {
       const isFront = tabGroup.frontTabId === tab.id;
       newBounds = this.calculateGlanceBounds(pageBounds, isFront);
 
-      layerType = isFront ? "tab" : "tabBack";
+      zIndex = isFront ? ViewLayer.TAB_FRONT : ViewLayer.TAB_BACK;
     } else if (tabGroup.mode === "split") {
       newTabGroupMode = "split";
       // TODO: Implement split tab group layout
     }
 
     // Update z-index via setWindow
-    tab.setWindow(window, layerType);
+    tab.setWindow(window, zIndex);
 
     // Track mode changes
     if (newTabGroupMode !== lastTabGroupMode) {

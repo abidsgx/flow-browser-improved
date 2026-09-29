@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PortalComponent } from "@/components/portal/portal";
 import { useBoundingRect } from "@/hooks/use-bounding-rect";
+import { ViewLayer } from "~/layers";
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import type { SidebarSide } from "@/components/browser-ui/types";
@@ -105,7 +106,7 @@ function ToastContainer({
   return (
     <PortalComponent
       visible={isVisible}
-      layerType="floatingSidebar"
+      zIndex={ViewLayer.OVERLAY}
       className="fixed"
       style={{
         top: anchorRect.y,
@@ -151,15 +152,12 @@ function ToastContainer({
               className={cn(
                 "box-border overflow-hidden",
                 "flex items-center",
-                "border rounded-lg",
-                "border-t-gray-800/30 dark:border-t-gray-300/30",
-                "border-x-gray-800/40 dark:border-x-gray-300/40",
-                "border-b-gray-800/50 dark:border-b-gray-300/50",
+                "border border-gray-800/50 dark:border-gray-300/50 rounded-lg",
                 "dimmed-space-background-start"
               )}
               onClick={() => onRemoveToast(activeToast.uid)}
             >
-              <span className="text-white/90 text-center text-[13px] font-bold tracking-[-0.01em] truncate flex-1 leading-none">
+              <span className="text-white/90 text-center text-[13px] font-medium tracking-[-0.01em] truncate flex-1 leading-none">
                 {currentMessage}
               </span>
             </motion.div>

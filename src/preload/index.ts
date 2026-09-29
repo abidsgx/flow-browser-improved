@@ -253,9 +253,6 @@ const tabsAPI: FlowTabsAPI = {
   onPlaceholderChanged: (callback) => {
     return listenOnIPCChannel("tabs:on-placeholder-changed", callback);
   },
-  onTargetUrlChanged: (callback) => {
-    return listenOnIPCChannel("tabs:on-target-url", callback);
-  },
   switchToTab: async (tabId: number) => {
     return ipcRenderer.invoke("tabs:switch-to-tab", tabId);
   },
@@ -431,16 +428,11 @@ const interfaceAPI: FlowInterfaceAPI = {
   setComponentWindowBounds: (componentId: string, bounds: Electron.Rectangle) => {
     return ipcRenderer.send("interface:set-component-window-bounds", componentId, bounds);
   },
-  allocateComponentWindow: (
-    ...[componentId, layerType, visible]: Parameters<FlowInterfaceAPI["allocateComponentWindow"]>
-  ) => {
-    return ipcRenderer.send("interface:allocate-component-window", componentId, layerType, visible);
+  setComponentWindowZIndex: (componentId: string, zIndex: number) => {
+    return ipcRenderer.send("interface:set-component-window-z-index", componentId, zIndex);
   },
-  setComponentWindowVisible: (...[componentId, visible]: Parameters<FlowInterfaceAPI["setComponentWindowVisible"]>) => {
+  setComponentWindowVisible: (componentId: string, visible: boolean) => {
     return ipcRenderer.send("interface:set-component-window-visible", componentId, visible);
-  },
-  releaseComponentWindow: (componentId: string) => {
-    return ipcRenderer.send("interface:release-component-window", componentId);
   },
   focusComponentWindow: (componentId: string) => {
     return ipcRenderer.send("interface:focus-component-window", componentId);

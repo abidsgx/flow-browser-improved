@@ -1,6 +1,5 @@
 import { findLatestNextMajorVersion, getCommitHashForTag } from "./_modules/github";
-import { incrementElectronUpdaterVersionConfiguration, runBunInstall, updatePackageJson } from "./_modules/updater";
-import { runUpdateNodeAbi } from "./update-node-abi";
+import { incrementElectronUpdaterVersionConfiguration, updateBunLock, updatePackageJson } from "./_modules/updater";
 
 // GRAB RELEASE FROM GITHUB //
 const latestNextVersion = await findLatestNextMajorVersion();
@@ -23,11 +22,10 @@ updatePackageJson(latestNextVersion);
 
 console.log("package.json updated!");
 
-await runUpdateNodeAbi();
+// UPDATE BUN.LOCK //
+updateBunLock(latestNextVersion, commitHash);
 
-runBunInstall();
-
-console.log("bun install completed (lockfile synced).");
+console.log("bun.lock updated!");
 
 // UPDATE ELECTRON UPDATER VERSION CONFIGURATION //
 incrementElectronUpdaterVersionConfiguration();

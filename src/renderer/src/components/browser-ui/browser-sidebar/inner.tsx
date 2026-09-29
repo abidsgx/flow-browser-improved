@@ -23,16 +23,14 @@ function SidebarIcon({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      viewBox="0 0 40 32"
+      viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2.5}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <rect x={4.625} y={3.75} width={30.75} height={24.5} rx={4.75} ry={4.75} />
-      <path strokeLinecap="square" d="M15.25 5v22" />
-      <path strokeWidth={2} d="M9 9.5h2M9 13.5h2M9 17.5h2" />
+      <path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM9 3v18" />
     </svg>
   );
 }
@@ -59,10 +57,13 @@ export function SidebarInner({ direction, variant }: { direction: AttachedDirect
       <div className="shrink-0 flex items-center justify-between px-1 pb-2">
         <div className="flex items-center gap-1.5">
           {direction === "left" && platform === "darwin" && (
-            <SidebarWindowControlsMacOS isAnimating={isAnimating || variant === "floating"} />
+            <SidebarWindowControlsMacOS
+              offset={variant === "floating" ? 13 : 7}
+              isAnimating={isAnimating || variant === "floating"}
+            />
           )}
           <NavButton
-            icon={<SidebarIcon className="size-5.5" />}
+            icon={<SidebarIcon className="size-4" />}
             onClick={() => setVisible(!mode.startsWith("attached"))}
           />
         </div>

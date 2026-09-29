@@ -29,7 +29,6 @@ import MinimalToastProvider from "@/components/providers/minimal-toast-provider"
 import { ActionsProvider } from "@/components/providers/actions-provider";
 import { PinnedTabsProvider } from "@/components/providers/pinned-tabs-provider";
 import BrowserContent from "@/components/browser-ui/browser-content";
-import { TargetUrlIndicator } from "@/components/browser-ui/target-url-indicator";
 import { FindInPage } from "@/components/browser-ui/find-in-page";
 import { PasskeyConditionalUI } from "@/components/browser-ui/passkey-conditional-ui";
 import { WebPrompts } from "@/components/browser-ui/web-prompts";
@@ -45,7 +44,7 @@ function SidebarResizeHandle() {
   const [isDown, setIsDown] = useState(false);
 
   return (
-    <div className="w-2.5 h-full remove-app-drag py-2 px-[3px] group">
+    <div className="w-3 h-full remove-app-drag py-4 px-1 group">
       <ResizableHandle
         className={cn(
           "w-full h-full rounded-full",
@@ -196,7 +195,7 @@ function PopupToolbar() {
 
   return (
     <div ref={ref} className={cn("w-full min-w-0 flex items-center gap-2 px-1 pb-2", !isCurrentSpaceLight && "dark")}>
-      {platform === "darwin" && <SidebarWindowControlsMacOS />}
+      {platform === "darwin" && <SidebarWindowControlsMacOS offset={10} />}
       <div className="shrink-0">
         <NavigationControls />
       </div>
@@ -271,11 +270,11 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
                 <ResizablePanel
                   id="main"
                   order={2}
-                  className={cn("min-w-0 flex-1 h-full py-2.5 overflow-visible!", topbarVisible && "pt-0")}
+                  className={cn("min-w-0 flex-1 h-full py-3 overflow-visible!", topbarVisible && "pt-0")}
                 >
                   <div className="w-full min-w-0 h-full flex items-center justify-center remove-app-drag">
                     {sidebarMode !== "attached-left" ? (
-                      <div className="w-2.5 shrink-0" />
+                      <div className="w-3 shrink-0" />
                     ) : (
                       <SidebarResizeHandle key="left-sidebar-resize-handle" />
                     )}
@@ -289,12 +288,11 @@ function InternalBrowserUI({ isReady, type }: { isReady: boolean; type: BrowserU
                         <PasskeyConditionalUI anchorRef={browserContentAnchorRef} />
                         <FindInPage anchorRef={browserContentAnchorRef} />
                         <BrowserContent />
-                        <TargetUrlIndicator anchorRef={browserContentAnchorRef} />
                       </div>
                     </div>
 
                     {sidebarMode !== "attached-right" ? (
-                      <div className="w-2.5 shrink-0" />
+                      <div className="w-3 shrink-0" />
                     ) : (
                       <SidebarResizeHandle key="right-sidebar-resize-handle" />
                     )}

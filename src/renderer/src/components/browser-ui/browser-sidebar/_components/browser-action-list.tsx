@@ -1,7 +1,8 @@
 import { type ActivateEventType, useBrowserAction } from "@/components/providers/browser-action-provider";
 import { useExtensions } from "@/components/providers/extensions-provider";
 import { useSpaces } from "@/components/providers/spaces-provider";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/portal/popover";
+import { PortalPopover } from "@/components/portal/popover";
+import { PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CogIcon, LayersIcon, PackageXIcon, PinIcon, PinOffIcon, PuzzleIcon } from "lucide-react";
@@ -167,21 +168,23 @@ export function BrowserActionList() {
 
   if (!focusedTab) return null;
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        className={cn(
-          "size-6 flex items-center justify-center rounded-md",
-          "hover:bg-black/15 dark:hover:bg-white/20",
-          "transition-colors duration-150",
-          "relative shrink-0"
-        )}
-        onClick={(event) => {
-          event.stopPropagation();
-        }}
-      >
-        <PuzzleIcon strokeWidth={2} className="size-4 text-black/80 dark:text-white/80" />
+    <PortalPopover.Root open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "size-6 flex items-center justify-center rounded-md",
+            "hover:bg-black/15 dark:hover:bg-white/20",
+            "transition-colors duration-150",
+            "relative shrink-0"
+          )}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <PuzzleIcon strokeWidth={2} className="w-4 h-4 text-black/80 dark:text-white/80" />
+        </button>
       </PopoverTrigger>
-      <PopoverContent className={cn("w-56 p-2 select-none")} positionerClassName={spaceInjectedClasses}>
+      <PortalPopover.Content className={cn("w-56 p-2 select-none", spaceInjectedClasses)}>
         {!noActiveTab &&
           !noActions &&
           actions.map((action) => (
@@ -213,7 +216,7 @@ export function BrowserActionList() {
           <CogIcon className="size-4 shrink-0" />
           <span className="font-medium truncate">Manage Extensions</span>
         </button>
-      </PopoverContent>
-    </Popover>
+      </PortalPopover.Content>
+    </PortalPopover.Root>
   );
 }

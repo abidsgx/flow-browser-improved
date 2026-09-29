@@ -103,12 +103,6 @@ export function promptCompleted(promptId: string, result: any, suppress: boolean
         result
       });
       break;
-    case "basic-auth":
-      activePrompt.resolver({
-        success: true,
-        result
-      });
-      break;
   }
 
   processPromptQueue();

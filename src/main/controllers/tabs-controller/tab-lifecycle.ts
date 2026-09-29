@@ -79,7 +79,7 @@ export class TabLifecycleManager {
     // Recreate view, webContents, listeners, extensions
     this.tab.initializeView();
 
-    // Add view to window's LayerManager
+    // Add view to window's ViewManager
     this.tab.setWindow(window);
 
     // Re-setup fullscreen listeners on the new webContents

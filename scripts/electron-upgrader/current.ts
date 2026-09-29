@@ -1,6 +1,5 @@
 import { findLatestCurrentMajorVersion, getCommitHashForTag } from "./_modules/github";
-import { runBunInstall, updatePackageJson } from "./_modules/updater";
-import { runUpdateNodeAbi } from "./update-node-abi";
+import { updateBunLock, updatePackageJson } from "./_modules/updater";
 
 // GRAB RELEASE FROM GITHUB //
 const latestCurrentVersion = await findLatestCurrentMajorVersion();
@@ -23,8 +22,7 @@ updatePackageJson(latestCurrentVersion);
 
 console.log("package.json updated!");
 
-await runUpdateNodeAbi();
+// UPDATE BUN.LOCK //
+updateBunLock(latestCurrentVersion, commitHash);
 
-runBunInstall();
-
-console.log("bun install completed (lockfile synced).");
+console.log("bun.lock updated!");

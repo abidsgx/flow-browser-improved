@@ -1,21 +1,23 @@
-import { useOptionalBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
 import { PortalComponent } from "@/components/portal/portal";
-import { Popover as BasePopover, PopoverContent as BasePopoverContent } from "@/components/ui/popover";
-import { type PopoverRootChangeEventDetails } from "@base-ui/react";
+import { Popover, PopoverContent } from "@/components/ui/popover";
+import { useOptionalBrowserSidebar } from "@/components/browser-ui/browser-sidebar/provider";
+import { ViewLayer } from "~/layers";
 import { createContext, useContext, useEffect, useId, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { PopoverArrow } from "@radix-ui/react-popover";
 
-export { PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
-
-interface PopoverContextType {
+type PopoverContextType = {
   open: boolean;
-  setOpen: ((open: boolean, eventDetails: PopoverRootChangeEventDetails) => void) | undefined;
-}
+  setOpen: ((open: boolean) => void) | undefined;
+};
+
 const PopoverContext = createContext<PopoverContextType | undefined>(undefined);
-export function Popover({
+
+function PortalPopoverRoot({
   open: userOpen,
   onOpenChange: userSetOpen,
   ...props
-}: React.ComponentProps<typeof BasePopover>) {
+}: React.ComponentProps<typeof Popover>) {
   const [internalOpen, internalSetOpen] = useState(false);
 
   const useUser = userOpen !== undefined;
@@ -34,57 +36,34 @@ export function Popover({
 
   return (
     <PopoverContext.Provider value={{ open, setOpen }}>
-      <BasePopover {...props} open={open} onOpenChange={setOpen} />
+      <Popover {...props} open={open} onOpenChange={setOpen} />
     </PopoverContext.Provider>
   );
 }
 
-/**
- * Set open to true instantly, but wait the given delay before setting open to false to delay removing of the popover.
- * @param value - The value to delay.
- * @param delay - The delay in milliseconds.
- * @returns The delayed value.
- */
-function useDelayedOpenValue(value: boolean, delay: number): boolean {
-  const [delayedValue, setDelayedValue] = useState(value);
-
-  useEffect(() => {
-    if (value === true) {
-      setDelayedValue(value);
-      return () => {};
-    } else {
-      const timer = setTimeout(() => {
-        setDelayedValue(value);
-      }, delay);
-
-      return () => {
-        clearTimeout(timer);
-      };
-    }
-  }, [value, delay]);
-
-  return delayedValue;
-}
-
-export function PopoverContent({ ...props }: Omit<React.ComponentProps<typeof BasePopoverContent>, "portalContainer">) {
+function PortalPopoverContent({ children, ...props }: React.ComponentProps<typeof PopoverContent>) {
   const { open } = usePopover();
-  const delayedOpen = useDelayedOpenValue(open, 200);
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
-  if (!delayedOpen) return null;
 
   return (
-    <>
-      {portalContainer && <BasePopoverContent {...props} portalContainer={portalContainer} />}
-      <PortalComponent
-        visible={delayedOpen}
-        autoFocus
-        className="w-screen h-screen absolute top-0 left-0"
-        layerType="popover"
-        portalBodyRef={setPortalContainer}
-      />
-    </>
+    <AnimatePresence mode="wait">
+      {open && (
+        <motion.div initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          <PortalComponent autoFocus className="w-screen h-screen absolute top-0 left-0" zIndex={ViewLayer.POPOVER}>
+            <PopoverContent {...props} portal={false}>
+              <PopoverArrow className="fill-popover h-2 w-4 outline-hidden stroke-border" />
+              {children}
+            </PopoverContent>
+          </PortalComponent>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
+
+export const PortalPopover = {
+  Root: PortalPopoverRoot,
+  Content: PortalPopoverContent
+};
 
 // Hook to use the popover context
 export const usePopover = () => {

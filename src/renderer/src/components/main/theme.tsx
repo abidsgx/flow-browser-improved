@@ -2,19 +2,11 @@ import { useEffect, useLayoutEffect, useState, createContext, useContext, useMem
 
 type Theme = "light" | "dark" | "system";
 
-/**
- * CSS class name template for theme-specific styling (mirrors document `light` / `dark` classes).
- */
-export type ThemeClassName = "light" | "dark";
-
 interface ThemeContextType {
   theme: Theme;
   appliedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
   resolvedTheme: "light" | "dark";
-
-  /** CSS class name for theme-specific styling on a subtree */
-  themeClassName: ThemeClassName;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -41,12 +33,10 @@ function applyThemeClass(theme: "light" | "dark") {
 export function ThemeProvider({
   forceTheme,
   persist = false,
-  shouldApplyClass = true,
   children
 }: {
   forceTheme?: Theme;
   persist?: boolean;
-  shouldApplyClass?: boolean;
   children: React.ReactNode;
 }) {
   const [_theme, setTheme] = useState<Theme>(() => {
@@ -82,15 +72,13 @@ export function ThemeProvider({
   // This prevents flicker when theme changes or forceTheme is provided
   useLayoutEffect(() => {
     // Apply theme class to document
-    if (shouldApplyClass) {
-      applyThemeClass(appliedTheme);
-    }
+    applyThemeClass(appliedTheme);
 
     if (persist) {
       // Save theme to localStorage
       localStorage.setItem("theme", theme);
     }
-  }, [theme, resolvedTheme, persist, appliedTheme, shouldApplyClass]);
+  }, [theme, resolvedTheme, persist, appliedTheme]);
 
   useEffect(() => {
     // Listen for changes in color scheme preference
@@ -112,18 +100,7 @@ export function ThemeProvider({
     };
   }, []);
 
-  const themeClassName: ThemeClassName = appliedTheme === "dark" ? "dark" : "light";
-  const value = { theme, appliedTheme, setTheme, resolvedTheme, themeClassName };
+  const value = { theme, appliedTheme, setTheme, resolvedTheme };
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
-}
-
-/**
- * Consumer that wraps children with theme classes so `dark` / `light` and Tailwind `dark:` apply under this subtree.
- * Must be used within a ThemeProvider (included by default inside ThemeProvider).
- */
-export function ThemeConsumer({ children }: { children: React.ReactNode }) {
-  const { themeClassName } = useTheme();
-
-  return <div className={themeClassName}>{children}</div>;
 }

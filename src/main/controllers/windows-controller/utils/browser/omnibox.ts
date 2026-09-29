@@ -1,22 +1,17 @@
-import { BrowserWindow as ElectronBrowserWindow, Rectangle, WebContents, WebContentsView } from "electron";
+import { BrowserWindow, Rectangle, WebContents, WebContentsView } from "electron";
 import { debugPrint } from "@/modules/output";
 import { clamp } from "@/modules/utils";
 import { browserWindowsController } from "@/controllers/windows-controller/interfaces/browser";
-import { Layer } from "@/controllers/windows-controller/layer-manager";
 import { sendMessageToListenersWithWebContents } from "@/ipc/listeners-manager";
-import { createModalTo, focusPriorities, zIndexes } from "~/layers";
 import type {
   OmniboxOpenIn,
   OmniboxOpenParams,
   OmniboxOpenState,
   OmniboxShadowPadding
 } from "~/flow/interfaces/browser/omnibox";
-import type {
-  BrowserWindow as FlowBrowserWindow,
-  BrowserWindowType
-} from "@/controllers/windows-controller/types/browser";
+import type { BrowserWindowType } from "@/controllers/windows-controller/types/browser";
 
-const omniboxes = new Map<ElectronBrowserWindow, Omnibox>();
+const omniboxes = new Map<BrowserWindow, Omnibox>();
 const OMNIBOX_URL = "flow-internal://omnibox/";
 const DEFAULT_OMNIBOX_WIDTH = 750;
 const DEFAULT_OMNIBOX_HEIGHT = 335;
@@ -75,10 +70,8 @@ function addShadowPadding(bounds: Electron.Rectangle, windowBounds: Rectangle): 
 export class Omnibox {
   public view: WebContentsView;
   public webContents: WebContents;
-  public layer: Layer<WebContentsView>;
 
-  private window: ElectronBrowserWindow;
-  private browserWindow: FlowBrowserWindow;
+  private window: BrowserWindow;
   private bounds: Electron.Rectangle | null = null;
   private ignoreBlurEvents: boolean = false;
   private blurIgnoreTimeout: NodeJS.Timeout | null = null;
@@ -92,9 +85,8 @@ export class Omnibox {
   private disabled: boolean = false;
   private isDestroyed: boolean = false;
 
-  constructor(parentWindow: FlowBrowserWindow, windowType: BrowserWindowType) {
+  constructor(parentWindow: BrowserWindow, windowType: BrowserWindowType) {
     debugPrint("OMNIBOX", `Creating new omnibox for window ${parentWindow.id}`);
-    const electronWindow = parentWindow.browserWindow;
     const onmiboxView = new WebContentsView({
       webPreferences: {
         transparent: true
@@ -125,7 +117,7 @@ export class Omnibox {
       debugPrint("OMNIBOX", "Omnibox interface finished loading");
       this.emitOpenState();
     });
-    electronWindow.on("resize", () => {
+    parentWindow.on("resize", () => {
       debugPrint("OMNIBOX", "Parent window resize event received");
       this.updateBounds();
     });
@@ -136,20 +128,11 @@ export class Omnibox {
       this.hide();
     }, 0);
 
-    omniboxes.set(electronWindow, this);
+    omniboxes.set(parentWindow, this);
 
     this.view = onmiboxView;
     this.webContents = onmiboxWC;
-    this.window = electronWindow;
-    this.browserWindow = parentWindow;
-    this.layer = new Layer(
-      parentWindow.layerManager,
-      onmiboxView,
-      zIndexes.omnibox,
-      focusPriorities.omnibox,
-      createModalTo("omnibox")
-    );
-    parentWindow.layerManager.push(this.layer);
+    this.window = parentWindow;
   }
 
   private assertNotDestroyed() {
@@ -289,13 +272,13 @@ export class Omnibox {
     this.hide();
 
     // Show UI
-    this.layer.setVisible(true);
+    this.view.setVisible(true);
 
     const tryFocus = () => {
       if (this.view.getVisible()) {
         debugPrint("OMNIBOX", "Attempting to focus omnibox");
         this.window.focus();
-        this.layer.focus();
+        this.webContents.focus();
       }
     };
 
@@ -312,7 +295,7 @@ export class Omnibox {
       debugPrint("OMNIBOX", "Refocusing omnibox");
       this.suppressBlurEventsTemporarily();
       this.window.focus();
-      this.layer.focus();
+      this.webContents.focus();
       return true;
     }
     return false;
@@ -321,8 +304,15 @@ export class Omnibox {
   hide() {
     this.assertNotDestroyed();
 
+    const omniboxWasFocused = this.webContents.isFocused();
+
     debugPrint("OMNIBOX", "Hiding omnibox");
-    this.layer.setVisible(false);
+    this.view.setVisible(false);
+
+    if (omniboxWasFocused) {
+      // Focuses the parent window instead
+      this.window.webContents.focus();
+    }
   }
 
   maybeHide() {
@@ -372,7 +362,6 @@ export class Omnibox {
     }
 
     this.isDestroyed = true;
-    this.browserWindow.layerManager.pop(this.layer);
     this.webContents.close();
   }
 

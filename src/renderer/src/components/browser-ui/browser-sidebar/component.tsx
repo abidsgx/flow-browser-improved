@@ -9,6 +9,7 @@ import { SidebarInner } from "./inner";
 import { type ImperativeResizablePanelWrapperHandle, PixelBasedResizablePanel } from "@/components/ui/resizable-extras";
 import { PortalComponent } from "@/components/portal/portal";
 import { SpaceBackgroundStylesheet } from "@/components/providers/spaces-provider";
+import { ViewLayer } from "~/layers";
 import { SIDEBAR_ANIMATION_CSS_EASING, SIDEBAR_ANIMATION_DURATION_MS } from "~/flow/sidebar-animation";
 
 // Component //
@@ -179,14 +180,14 @@ export function BrowserSidebar({
         "w-full h-full max-h-screen remove-app-drag",
         "transition-transform",
         "flex flex-col",
-        isFloating && "rounded-lg border border-sidebar-border/50 sidebar-floating-bg backdrop-blur-md"
+        isFloating && "rounded-lg border border-sidebar-border/50 sidebar-floating-bg"
       )}
       style={SIDEBAR_ANIMATION_STYLE}
     >
       {isFloating && <SpaceBackgroundStylesheet selector="[data-space-background-scope]" />}
       <div
         className={cn(
-          "m-2.5 mb-0 flex-1 min-h-0",
+          "m-3 mb-0 flex-1 min-h-0",
           "flex flex-col",
           "select-none",
           direction === "left" && !isFloating && "mr-0",
@@ -209,7 +210,7 @@ export function BrowserSidebar({
           height: `calc(100vh - ${topbarHeight}px)`
         }}
         visible={true}
-        layerType="floatingSidebar"
+        zIndex={ViewLayer.OVERLAY}
       >
         <div
           ref={animatedRef}

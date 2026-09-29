@@ -1,5 +1,4 @@
 import { IPCListener, PageBounds, WindowState } from "~/flow/types";
-import { type LayerType } from "~/layers";
 
 /** Fired by the main-process cursor monitor when the pointer enters or leaves a window edge. */
 export type CursorEdgeEvent = {
@@ -43,19 +42,14 @@ export interface FlowInterfaceAPI {
   setComponentWindowBounds: (componentId: string, bounds: PageBounds) => void;
 
   /**
-   * Allocates a free component window
+   * Sets the z-index of a component window
    */
-  allocateComponentWindow: (componentId: string, layerType: LayerType, visible?: boolean) => void;
+  setComponentWindowZIndex: (componentId: string, zIndex: number) => void;
 
   /**
    * Sets the visibility of a component window
    */
   setComponentWindowVisible: (componentId: string, visible: boolean) => void;
-
-  /**
-   * Releases a component window back to the pool (does not tear down BrowserWindow lifecycle).
-   */
-  releaseComponentWindow: (componentId: string) => void;
 
   /**
    * Focuses a component window's webContents so it receives keyboard input

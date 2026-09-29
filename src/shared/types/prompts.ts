@@ -41,22 +41,8 @@ interface AlertPromptState extends BasePromptState<void> {
   message: string;
 }
 
-export interface BasicAuthCredentials {
-  username: string;
-  password: string;
-}
-
-interface BasicAuthPromptState extends BasePromptState<BasicAuthCredentials | null> {
-  type: "basic-auth";
-  host: string;
-  port: number;
-  realm: string;
-  scheme: string;
-  isProxy: boolean;
-}
-
 // Combined Prompt States //
-export type PromptState = TextPromptState | ConfirmPromptState | AlertPromptState | BasicAuthPromptState;
+export type PromptState = TextPromptState | ConfirmPromptState | AlertPromptState;
 
 // Renderer Types //
 export type ActivePrompt = DistributiveOmit<PromptState, "promise" | "resolver">;

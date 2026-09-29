@@ -4,6 +4,15 @@
 import process from "process";
 import { spawn } from "child_process";
 
+/** @type {() => Promise<boolean>} */
+function isCastlabsEvsAvailable() {
+  return new Promise((resolve) => {
+    const probe = spawn("python3", ["-c", "import castlabs_evs"]);
+    probe.on("close", (code) => resolve(code === 0));
+    probe.on("error", () => resolve(false));
+  });
+}
+
 /** @type {(appOutDir: string) => Promise<void>} */
 async function signAppWithVMP(appOutDir) {
   let signPath = null;
@@ -15,6 +24,10 @@ async function signAppWithVMP(appOutDir) {
 
   if (signPath) {
     console.log(`\nSigning the app for ${process.platform} in ${signPath}`);
+    if (!(await isCastlabsEvsAvailable())) {
+      console.log("Skipping VMP signing, 'castlabs_evs' module is not installed (pip install castlabs-evs)");
+      return Promise.resolve();
+    }
     try {
       return new Promise((resolve, reject) => {
         const signProcess = spawn("python3", ["-m", "castlabs_evs.vmp", "--no-ask", "sign-pkg", signPath]);

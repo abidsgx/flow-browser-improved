@@ -4,6 +4,7 @@
   "compilerOptions": {
     "composite": true,
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "types": ["electron-vite/node"],
     "paths": {
       "@/*": [

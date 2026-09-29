@@ -8,3 +8,5 @@ out
 .yalc
 yalc.lock
 test.sh
+.opencode/sessions
+.opencode/logs

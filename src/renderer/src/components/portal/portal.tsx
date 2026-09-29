@@ -4,16 +4,13 @@ import { useBoundingRect } from "@/hooks/use-bounding-rect";
 import { useCopyStyles } from "@/hooks/use-copy-styles";
 import { mergeRefs } from "@/lib/merge-refs";
 import { cn } from "@/lib/utils";
-import { type LayerType } from "~/layers";
-import { createContext, RefObject, useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { ViewLayer } from "~/layers";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 
-type PortalBodyRef = RefObject<HTMLElement | null> | ((body: HTMLElement | null) => void);
-
 interface PortalComponentProps extends React.ComponentProps<"div"> {
-  portalBodyRef?: PortalBodyRef;
   visible?: boolean;
-  layerType?: LayerType;
+  zIndex?: number;
   autoFocus?: boolean;
 }
 
@@ -38,18 +35,15 @@ export function usePortalContext() {
 
 export function PortalComponent({
   visible = true,
-  layerType = "floatingSidebar",
+  zIndex = ViewLayer.OVERLAY,
   autoFocus = false,
   className,
   children,
   ref,
-  portalBodyRef,
   ...args
 }: PortalComponentProps) {
   const { usePortal } = usePortalsProvider();
   const portal = usePortal();
-  const visibleRef = useRef(visible);
-  visibleRef.current = visible;
 
   const holderRef = useRef<HTMLDivElement>(null);
   const mergedRef = mergeRefs([ref, holderRef]);
@@ -66,21 +60,6 @@ export function PortalComponent({
 
   // Copy styles from parent window to portal window
   useCopyStyles(portal?.window ?? null);
-
-  // Keep portalBodyRef in sync with the portal window's document body
-  useEffect(() => {
-    if (!portal?.window) return;
-    if (!portalBodyRef) return;
-    const body = portal.window.document.body;
-    if (typeof portalBodyRef === "function") {
-      portalBodyRef(body);
-      return () => portalBodyRef(null);
-    }
-    portalBodyRef.current = body;
-    return () => {
-      portalBodyRef.current = null;
-    };
-  }, [portal, portalBodyRef]);
 
   const portalChildren = useMemo(() => {
     const contextValue: PortalContextValue = {
@@ -100,17 +79,6 @@ export function PortalComponent({
       </PortalContext.Provider>
     );
   }, [children, bounds]);
-
-  useLayoutEffect(() => {
-    if (!portal?.window || portal.window.closed) return;
-
-    try {
-      // layerType is fixed for the lifetime of an allocated portal window.
-      flow.interface.allocateComponentWindow(portal.id, layerType, visibleRef.current);
-    } catch (error) {
-      console.warn("Failed to allocate portal:", error);
-    }
-  }, [portal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update visibility of the portal
   useLayoutEffect(() => {
@@ -137,6 +105,17 @@ export function PortalComponent({
       console.warn("Failed to focus portal:", error);
     }
   }, [portal, visible, autoFocus]);
+
+  // Update z-index of the portal
+  useLayoutEffect(() => {
+    if (!portal?.window || portal.window.closed) return;
+
+    try {
+      flow.interface.setComponentWindowZIndex(portal.id, zIndex);
+    } catch (error) {
+      console.warn("Failed to set portal z-index:", error);
+    }
+  }, [portal, zIndex]);
 
   // Update bounds of the portal
   useLayoutEffect(() => {

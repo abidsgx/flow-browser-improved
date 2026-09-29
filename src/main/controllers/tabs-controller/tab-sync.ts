@@ -70,9 +70,7 @@ function sendPlaceholderUpdate(targetWindow: BrowserWindow, update: TabPlacehold
  */
 function prepareTabForWindowTransfer(tab: Tab): void {
   tab.visible = false;
-  if (tab.layer) {
-    tab.layer.setVisible(false);
-  }
+  tab.view?.setVisible(false);
 }
 
 /**

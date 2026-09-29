@@ -1,45 +1,10 @@
+import { createSearchUrl } from "@/lib/search";
+
 // Real Target Protocol -> Fake Browser Protocol
 const protocolReplacements = {
-  "chrome-extension://": "extension://",
-  "chrome://": "flow://"
+  "chrome-extension://": "extension://"
 };
 
-// URLs that should not transform to flow://
-// Prefix these with chrome:// to open them in the browser
-// e.g. chrome://gpu
-const CHROME_PROTOCOL_WHITELIST = [
-  "gpu",
-  "tracing",
-  "webrtc-internals",
-  "media-internals",
-  "blob-internals",
-  "accessibility",
-  "process-internals"
-];
-
-export function transformPotentialDisplayUrlToUrl(url: string): string | null {
-  // chrome:// -> flow:// (for most cases)
-  // without this case, it will try to transform every flow:// URL to chrome://, which we can't have.
-  const urlObject = URL.parse(url);
-  if (urlObject && ["chrome:", "flow:"].includes(urlObject.protocol)) {
-    if (CHROME_PROTOCOL_WHITELIST.includes(urlObject.hostname)) {
-      urlObject.protocol = "chrome:";
-    } else {
-      urlObject.protocol = "flow:";
-    }
-    return urlObject.toString();
-  }
-
-  for (const [key, value] of Object.entries(protocolReplacements)) {
-    if (url.startsWith(value)) {
-      return url.replace(new RegExp(`^${value}`), key);
-    }
-  }
-
-  return null;
-}
-
-// TODO: Legacy function, remove
 export function getURLFromInput(input: string): string | null {
   // Trim whitespace
   const trimmedInput = input.trim();
@@ -77,34 +42,48 @@ export function getURLFromInput(input: string): string | null {
   return null;
 }
 
-export function transformUrlToDisplayURL(url: string, allowEmpty: boolean = true): string | null {
+export function isInputURL(input: string): boolean {
+  return getURLFromInput(input) !== null;
+}
+
+export function parseAddressBarInput(input: string): string {
+  // Trim whitespace
+  const trimmedInput = input.trim();
+
+  // Check if input is empty
+  if (!trimmedInput) return "";
+
+  // Parse as URL
+  const url = getURLFromInput(input);
+  if (url) {
+    return url;
+  }
+
+  // Treat as search query
+  return createSearchUrl(trimmedInput);
+}
+
+export function transformUrl(url: string): string | null {
   const urlObject = URL.parse(url);
 
   // Error Page (flow://error)
   if (urlObject && urlObject.protocol === "flow:" && urlObject.hostname === "error") {
     const erroredURL = urlObject.searchParams.get("url");
     if (erroredURL) {
-      return transformUrlToDisplayURL(erroredURL, allowEmpty) ?? erroredURL;
+      return erroredURL;
     } else {
-      return null;
+      return "";
     }
   }
 
   // New Tab Page (flow://new-tab)
   if (urlObject && urlObject.protocol === "flow:" && urlObject.hostname === "new-tab") {
-    if (allowEmpty) {
-      return "";
-    }
+    return "";
   }
 
   // PDF Viewer (flow://pdf-viewer)
   if (urlObject && urlObject.protocol === "flow:" && urlObject.hostname === "pdf-viewer") {
-    const pdfURL = urlObject.searchParams.get("url");
-    if (pdfURL) {
-      return transformUrlToDisplayURL(pdfURL, allowEmpty) ?? pdfURL;
-    } else {
-      return null;
-    }
+    return urlObject.searchParams.get("url") ?? "";
   }
 
   // Other Protocols

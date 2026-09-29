@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { spawnSync } from "node:child_process";
 import * as jju from "jju";
 import { BunLock } from "@/_types/bun-lock";
 import { PackageJson } from "@/_types/package-json";
@@ -38,48 +37,6 @@ export function updatePackageJson(electronVersion: string) {
   });
 
   fs.writeFileSync(packageJsonPath, updatedContent);
-}
-
-/**
- * Sets `devDependencies.node-abi` in package.json (jju-parsed, formatting preserved).
- */
-export function updateNodeAbiDependency(versionRange: string) {
-  const packageJsonPath = path.join(process.cwd(), "package.json");
-  const packageJsonContent = fs.readFileSync(packageJsonPath, "utf8");
-  const packageJson = jju.parse(packageJsonContent) as PackageJson;
-
-  if (!packageJson.devDependencies) {
-    throw new Error("package.json has no devDependencies");
-  }
-  if (!("node-abi" in packageJson.devDependencies)) {
-    throw new Error("package.json devDependencies.node-abi is missing");
-  }
-
-  packageJson.devDependencies["node-abi"] = versionRange;
-
-  const updatedContent = jju.update(packageJsonContent, packageJson, {
-    mode: "json",
-    indent: 2
-  });
-
-  fs.writeFileSync(packageJsonPath, updatedContent);
-}
-
-/**
- * Runs `bun install` from the repo root so `bun.lock` matches the updated `package.json`.
- */
-export function runBunInstall() {
-  const result = spawnSync("bun", ["install"], {
-    cwd: process.cwd(),
-    stdio: "inherit"
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    throw new Error(`bun install failed with exit code ${result.status ?? "unknown"}`);
-  }
 }
 
 /**

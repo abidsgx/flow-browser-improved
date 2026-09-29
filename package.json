@@ -1,9 +1,13 @@
 {
   "name": "flow-browser",
   "productName": "Flow",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "A modern privacy-focused browser with a minimalistic design.",
   "main": "./out/main/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MultiboxLabs/flow-browser.git"
+  },
   "author": {
     "name": "iamEvan",
     "email": "evan@iamevan.dev",
@@ -59,8 +63,6 @@
   "devDependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.10",
     "@atlaskit/pragmatic-drag-and-drop-react-drop-indicator": "^3.2.15",
-    "@base-ui/react": "^1.4.1",
-    "@chenglou/pretext": "^0.0.5",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
@@ -88,7 +90,7 @@
     "d3-drag": "^3.0.0",
     "d3-selection": "^3.0.0",
     "drizzle-kit": "^0.31.10",
-    "electron": "https://github.com/castlabs/electron-releases#v41.1.1+wvcus",
+    "electron": "https://github.com/castlabs/electron-releases#v40.7.0+wvcus",
     "electron-builder": "26.8.1",
     "electron-vite": "^5.0.0",
     "eslint": "^9.26.0",
@@ -132,6 +134,7 @@
     "sharp"
   ],
   "patchedDependencies": {
-    "app-builder-lib@26.8.1": "patches/app-builder-lib@26.8.1.patch"
+    "app-builder-lib@26.8.1": "patches/app-builder-lib@26.8.1.patch",
+    "node-gyp@11.5.0": "patches/node-gyp@11.5.0.patch"
   }
 }

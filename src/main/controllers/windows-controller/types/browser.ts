@@ -3,8 +3,7 @@ import { app, BrowserWindow as ElectronBrowserWindow, nativeTheme, WebContents }
 import { type PageBounds } from "@/ipc/browser/page";
 import { type PageLayoutParams } from "~/flow/types";
 import { appMenuController } from "@/controllers/app-menu-controller";
-import { LayerManager } from "@/controllers/windows-controller/layer-manager";
-import { FakeWebContentsViewLayer } from "@/controllers/windows-controller/layer-manager/fake-webcontentsview-layer";
+import { ViewManager } from "@/controllers/windows-controller/utils/view-manager";
 import { Omnibox } from "@/controllers/windows-controller/utils/browser/omnibox";
 import { initializePortalComponentWindows } from "@/controllers/windows-controller/utils/browser/portal-component-windows";
 import { sendMessageToListenersWithWebContents } from "@/ipc/listeners-manager";
@@ -16,7 +15,7 @@ import { tabPersistenceManager } from "@/saving/tabs";
 import { quitController } from "@/controllers/quit-controller";
 import { hex_is_light } from "@/modules/utils";
 import { relocateTabsFromClosingWindow } from "@/controllers/tabs-controller/tab-sync";
-import { createModalTo, focusPriorities, zIndexes } from "~/layers";
+import { ViewLayer } from "~/layers";
 import { SidebarInterpolation } from "@/controllers/windows-controller/utils/browser/sidebar-interpolation";
 import { SIDEBAR_ANIMATION_DURATION_MS } from "~/flow/sidebar-animation";
 
@@ -53,25 +52,13 @@ function isPageBoundsEqual(a: PageBounds, b: PageBounds): boolean {
 
 export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
   public browserWindowType: BrowserWindowType;
-  public layerManager: LayerManager;
+  public viewManager: ViewManager;
   public coreWebContents: WebContents[];
   public omnibox: Omnibox;
 
   constructor(type: BrowserWindowType, options: BrowserWindowCreationOptions = {}) {
     // const hasSizeOptions = "width" in options || "height" in options;
     const hasPositionOptions = options.x !== undefined || options.y !== undefined;
-
-    let titleBarOverlayOption: boolean | Electron.TitleBarOverlay | undefined = {
-      height: 30,
-      symbolColor: nativeTheme.shouldUseDarkColors ? "white" : "black",
-      color: "rgba(0,0,0,0)"
-    };
-
-    // titleBarOverlay causes setWindowButtonPosition miscalculation in MacOS Tahoe
-    // see: https://github.com/electron/electron/issues/49183
-    if (process.platform === "darwin") {
-      titleBarOverlayOption = undefined;
-    }
 
     const browserWindow = new ElectronBrowserWindow({
       minWidth: type === "normal" ? 800 : 300,
@@ -85,7 +72,11 @@ export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
       center: hasPositionOptions ? false : true,
 
       titleBarStyle: process.platform === "darwin" || process.platform === "win32" ? "hidden" : undefined,
-      titleBarOverlay: titleBarOverlayOption,
+      titleBarOverlay: {
+        height: 30,
+        symbolColor: nativeTheme.shouldUseDarkColors ? "white" : "black",
+        color: "rgba(0,0,0,0)"
+      },
 
       webPreferences: {
         sandbox: true,
@@ -176,21 +167,13 @@ export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
       this.recomputePageBounds();
     });
 
-    // Layer Manager //
-    this.layerManager = new LayerManager(this);
-    this.layerManager.push(
-      new FakeWebContentsViewLayer(
-        this.layerManager,
-        browserWindow.webContents,
-        zIndexes.browserUI,
-        focusPriorities.browserUI,
-        createModalTo("browserUI")
-      )
-    );
+    // View Manager //
+    this.viewManager = new ViewManager(browserWindow.contentView);
     this.coreWebContents = [browserWindow.webContents];
 
     // Omnibox //
-    this.omnibox = new Omnibox(this, type);
+    this.omnibox = new Omnibox(browserWindow, type);
+    this.viewManager.addOrUpdateView(this.omnibox.view, ViewLayer.OMNIBOX);
     this.coreWebContents.push(this.omnibox.webContents);
     browserWindow.on("focus", () => {
       if (!this.omnibox.isVisible()) {
@@ -362,7 +345,7 @@ export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
       effectiveSidebarWidth = sidebarVisible ? sidebarWidth : 0;
     }
 
-    const PADDING = 10;
+    const PADDING = 12;
     const padTop = (topbarVisible ? topbarHeight : PADDING) + (contentTopOffset ?? 0);
     const padBottom = PADDING;
 
@@ -424,7 +407,7 @@ export class BrowserWindow extends BaseWindow<BrowserWindowEvents> {
       }
 
       this.omnibox.destroy();
-      this.layerManager.destroy();
+      this.viewManager.destroy();
     }
     return result;
   }

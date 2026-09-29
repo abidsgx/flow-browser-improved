@@ -5,6 +5,7 @@ import { PortalComponent } from "@/components/portal/portal";
 import { useFocusedTabId } from "@/components/providers/tabs-provider";
 import { useBoundingRect } from "@/hooks/use-bounding-rect";
 import { cn } from "@/lib/utils";
+import { ViewLayer } from "~/layers";
 import { usePasskeyRequests } from "@/components/providers/passkeys-request-provider";
 import type { ConditionalPasskeyRequest, PasskeyCredential } from "~/types/passkey";
 
@@ -566,7 +567,7 @@ export function PasskeyConditionalUI({ anchorRef }: PasskeyConditionalUIProps) {
           <PortalComponent
             key={tabId}
             visible={tabId === focusedTabId}
-            layerType="passkeyConditionalUI"
+            zIndex={ViewLayer.OVERLAY}
             className="fixed"
             style={portalStyle}
           >
