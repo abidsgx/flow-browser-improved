@@ -2,7 +2,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getBangs, waitForBangsLoad, type BangEntry } from "@/lib/omnibox-new/bangs-initializer";
 import { motion } from "motion/react";
 import { Search } from "lucide-react";
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+
+// The list holds ~13,500 entries. Mounting every row at once is by far the
+// largest renderer allocation on this page, so rows are revealed in batches as
+// the user scrolls instead.
+const INITIAL_RENDER_LIMIT = 200;
+const RENDER_BATCH = 400;
 
 function getBangDestination(entry: BangEntry): string {
   if (entry.d.includes(".")) {
@@ -24,8 +30,15 @@ function getBangHost(entry: BangEntry): string {
   }
 }
 
+const bangSearchTokenCache = new WeakMap<BangEntry, string>();
+
 function getBangSearchTokens(entry: BangEntry): string {
-  return [entry.t, entry.s, entry.d, entry.c, entry.sc].filter(Boolean).join("\n").toLowerCase();
+  const cached = bangSearchTokenCache.get(entry);
+  if (cached !== undefined) return cached;
+
+  const tokens = [entry.t, entry.s, entry.d, entry.c, entry.sc].filter(Boolean).join("\n").toLowerCase();
+  bangSearchTokenCache.set(entry, tokens);
+  return tokens;
 }
 
 function getBangSortScore(entry: BangEntry, query: string): number {
@@ -70,6 +83,8 @@ function groupBangsByCategory(entries: BangEntry[], query: string) {
 function BangsPage() {
   const [bangEntries, setBangEntries] = useState(() => getBangs());
   const [search, setSearch] = useState("");
+  const [renderLimit, setRenderLimit] = useState(INITIAL_RENDER_LIMIT);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
 
   useEffect(() => {
@@ -101,6 +116,46 @@ function BangsPage() {
     () => groupedBangs.reduce((total, group) => total + group.items.length, 0),
     [groupedBangs]
   );
+
+  // A new search resets how much of the list is mounted.
+  useEffect(() => {
+    setRenderLimit(INITIAL_RENDER_LIMIT);
+  }, [deferredSearch]);
+
+  // Reveal the next batch once the user reaches the end of what is rendered.
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setRenderLimit((limit) => limit + RENDER_BATCH);
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [resultCount]);
+
+  const visibleGroups = useMemo(() => {
+    const groups: { category: string; items: BangEntry[] }[] = [];
+    let remaining = renderLimit;
+
+    for (const group of groupedBangs) {
+      if (remaining <= 0) break;
+
+      const items = group.items.length <= remaining ? group.items : group.items.slice(0, remaining);
+      remaining -= items.length;
+      groups.push({ category: group.category, items });
+    }
+
+    return groups;
+  }, [groupedBangs, renderLimit]);
+
+  const hasMoreToRender = renderLimit < resultCount;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -138,7 +193,7 @@ function BangsPage() {
             <p className="text-muted-foreground text-sm mt-1">Try a different search.</p>
           </div>
         ) : (
-          groupedBangs.map((group) => (
+          visibleGroups.map((group) => (
             <Card key={group.category} className="gap-0 py-0 shadow-sm overflow-clip">
               <CardHeader className="sticky top-15 z-5 px-4 py-2.5! border-border/60 gap-0 border-b bg-muted/95 backdrop-blur-sm">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -171,6 +226,8 @@ function BangsPage() {
             </Card>
           ))
         )}
+
+        {hasMoreToRender && <div ref={loadMoreRef} className="h-px" aria-hidden />}
       </motion.div>
     </div>
   );

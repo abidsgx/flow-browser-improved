@@ -46,4 +46,14 @@ export function getBangs() {
   return [];
 }
 
-getBangs();
+/**
+ * Warms the bang list without waiting for it.
+ *
+ * The dataset is a ~2.5MB chunk. Previously this module kicked off the load at
+ * import time, so every renderer paid for it during startup whether or not
+ * bangs were ever used. Now the omnibox primes it when it opens, which keeps
+ * bangs working while taking the cost off the startup path.
+ */
+export function primeBangs(): void {
+  getBangs();
+}

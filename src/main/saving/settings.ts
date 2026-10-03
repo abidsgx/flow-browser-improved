@@ -2,6 +2,7 @@ import { getDatastore } from "./datastore";
 import { fireOnSettingsChanged } from "@/ipc/window/settings";
 import { BasicSettings } from "@/modules/basic-settings";
 import { TypedEventEmitter } from "@/modules/typed-event-emitter";
+import { debugPrint } from "@/modules/output";
 import { BasicSetting, SettingType } from "~/types/settings";
 
 export const SettingsDataStore = getDatastore("settings");
@@ -36,17 +37,58 @@ async function cacheSetting(setting: BasicSetting) {
   }
 }
 
+/**
+ * Records which setting migrations have already run, so that a value the user
+ * picks *after* a migration is never rewritten again.
+ */
+const APPLIED_MIGRATIONS_KEY = "__appliedSettingMigrations";
+
+/**
+ * One-time migrations for values written to the datastore by older builds.
+ *
+ * `sleepTabAfter` used to default to "never", which keeps a renderer process
+ * alive for every background tab (~20-50MB each). Only that legacy default is
+ * rewritten - an explicitly chosen value such as "30m" is left untouched.
+ */
+const SETTING_VALUE_MIGRATIONS: Record<string, { from: unknown; to: SettingType["defaultValue"] }> = {
+  sleepTabAfter: { from: "never", to: "10m" }
+};
+
+async function applySettingMigrations() {
+  const applied = await SettingsDataStore.get<unknown>(APPLIED_MIGRATIONS_KEY).catch(() => undefined);
+  const alreadyApplied = new Set<string>(Array.isArray(applied) ? applied.filter((id) => typeof id === "string") : []);
+
+  const pending = Object.keys(SETTING_VALUE_MIGRATIONS).filter((id) => !alreadyApplied.has(id));
+  if (pending.length === 0) return;
+
+  for (const id of pending) {
+    const setting = BasicSettings.find((candidate) => candidate.id === id);
+    const migration = SETTING_VALUE_MIGRATIONS[id];
+    if (!setting) continue;
+
+    const current = await SettingsDataStore.get<unknown>(id).catch(() => undefined);
+    if (current === migration.from && validateSettingValue(setting, migration.to)) {
+      await SettingsDataStore.set(id, migration.to);
+      debugPrint("DATASTORE", `Migrated "${id}" from "${String(migration.from)}" to "${String(migration.to)}".`);
+    }
+
+    alreadyApplied.add(id);
+  }
+
+  await SettingsDataStore.set(APPLIED_MIGRATIONS_KEY, [...alreadyApplied]).catch(() => undefined);
+}
+
 // Cache Settings //
-const settingsCachedPromise = new Promise<void>((resolve) => {
+const settingsCachedPromise = (async () => {
+  await applySettingMigrations();
+
   const promises: Promise<void>[] = [];
   for (const setting of BasicSettings) {
     promises.push(cacheSetting(setting));
   }
 
-  Promise.all(promises).then(() => {
-    resolve();
-  });
-});
+  await Promise.all(promises);
+})();
 
 export const onSettingsCached = () => settingsCachedPromise;
 

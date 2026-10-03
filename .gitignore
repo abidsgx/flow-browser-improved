@@ -10,3 +10,8 @@ yalc.lock
 test.sh
 .opencode/sessions
 .opencode/logs
+
+# Users configure their own blocklist; the checked-in copy is blank.
+# NOTE: this file is still tracked so that fresh clones can build, so it must be
+# marked skip-worktree to keep local changes out of commits. See docs.
+src/main/blocklist/blocklist.json

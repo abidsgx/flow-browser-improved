@@ -5,7 +5,6 @@ import sharp from "sharp";
 import { canUserSwitchWindowSpace, setWindowSpace } from "@/ipc/session/spaces";
 import path from "path";
 import { readFile } from "fs/promises";
-import { IconEntry, icons } from "@phosphor-icons/core";
 import { spacesController } from "@/controllers/spaces-controller";
 import { profilesController } from "@/controllers/profiles-controller";
 import { browserWindowsManager, windowsController } from "@/controllers/windows-controller";
@@ -18,14 +17,18 @@ interface Space {
   icon?: string;
 }
 
-const PhosphorIcons = icons as unknown as IconEntry[];
-
 /**
  * Icon utilities
+ *
+ * Phosphor names are the kebab-case form of the PascalCase name
+ * ("DotOutline" -> "dot-outline"). Deriving it keeps the ~450KB
+ * `@phosphor-icons/core` metadata array out of the main process heap.
  */
 function getIconNameFromPascalCase(pascalCaseName: string): string {
-  const icon = PhosphorIcons.find((icon) => icon.pascal_name === pascalCaseName);
-  return icon?.name || "dot-outline";
+  return pascalCaseName
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
 }
 
 function getPhosphorIconPath(pascalName: string): string | null {
@@ -83,6 +86,7 @@ async function createSvgFromIconPath(iconPath: string): Promise<NativeImage | nu
 
 // Icon cache
 type IconCacheKey = `${string}`;
+const ICON_CACHE_LIMIT = 64;
 const iconCache = new Map<IconCacheKey, NativeImage>();
 
 async function getIconAsNativeImage(name: string): Promise<NativeImage | null> {
@@ -99,6 +103,12 @@ async function getIconAsNativeImage(name: string): Promise<NativeImage | null> {
 
   const image = await createSvgFromIconPath(iconPath);
   if (image) {
+    // Bound the cache: insertion-ordered, so the oldest key is the first one.
+    while (iconCache.size >= ICON_CACHE_LIMIT) {
+      const oldest = iconCache.keys().next();
+      if (oldest.done) break;
+      iconCache.delete(oldest.value);
+    }
     iconCache.set(cacheKey, image);
   }
 

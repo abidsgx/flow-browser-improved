@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Search } from "lucide-react";
 import { requestOmniboxSuggestions } from "@/lib/omnibox-new";
 import { primeOpenTabsCache, primeQuickHistoryCache } from "@/lib/omnibox-new/suggestors";
+import { primeBangs } from "@/lib/omnibox-new/bangs-initializer";
 import type { OmniboxSuggestion } from "@/lib/omnibox-new/types";
 import { OmniboxSuggestionRow } from "@/components/omnibox/omnibox-suggestion";
 import { useSetting } from "@/components/providers/settings-provider";
@@ -132,6 +133,7 @@ export function OmniboxMain() {
 
   // This effect is ran when the omnibox is opened.
   useEffect(() => {
+    primeBangs();
     void primeQuickHistoryCache(currentSpace?.profileId, { force: true });
     void primeOpenTabsCache(currentSpace?.id, { force: true });
   }, [openState.openIn, openState.sequence, currentSpace?.id, currentSpace?.profileId]);

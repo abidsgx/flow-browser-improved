@@ -18,11 +18,18 @@ import { initCursorEdgeMonitor } from "@/controllers/windows-controller/utils/cu
 import { cleanupStaleEphemeralProfiles } from "@/controllers/profiles-controller/ephemeral";
 import { initTabSync } from "@/controllers/tabs-controller/tab-sync";
 import { pinnedTabsController } from "@/controllers/pinned-tabs-controller";
+import { startMemoryMonitor } from "@/modules/memory-monitor";
+import { onSettingsCached } from "@/saving/settings";
 
 async function bootstrapBrowser() {
   await cleanupStaleEphemeralProfiles().catch((error) => {
     console.error("Failed to cleanup stale ephemeral profiles:", error);
   });
+
+  // Make sure settings (including any migrations) are resolved before the
+  // optional memory monitor reports on them.
+  await onSettingsCached().catch(() => undefined);
+  startMemoryMonitor();
 
   // Start tab persistence flush interval (writes dirty tabs to disk every ~2s)
   tabPersistenceManager.start();

@@ -176,7 +176,10 @@ export const BasicSettings: BasicSetting[] = [
     name: "Sleep Tab After",
     showName: false,
     type: "enum",
-    defaultValue: "never",
+    // Background tabs keep their renderer process (and its full page heap)
+    // alive indefinitely when this is "never", which is the dominant source of
+    // RAM usage in this app. The sleep path destroys `webContents` outright.
+    defaultValue: "10m",
     options: [
       {
         id: "5m",

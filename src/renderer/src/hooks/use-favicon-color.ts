@@ -191,8 +191,20 @@ function extractFaviconColors(imageUrl: string): Promise<FaviconColors | null> {
   });
 }
 
-// Simple in-memory cache
+// Simple in-memory cache, bounded so that visiting many sites cannot grow it
+// without limit.
+const FAVICON_COLOR_CACHE_LIMIT = 200;
 const colorCache = new Map<string, FaviconColors | null>();
+
+function cacheFaviconColors(faviconUrl: string, colors: FaviconColors | null) {
+  colorCache.set(faviconUrl, colors);
+
+  while (colorCache.size > FAVICON_COLOR_CACHE_LIMIT) {
+    const oldest = colorCache.keys().next();
+    if (oldest.done) break;
+    colorCache.delete(oldest.value);
+  }
+}
 
 /**
  * Hook to extract colors from favicon corners and center for creating position-matched gradients.
@@ -215,7 +227,7 @@ export function useFaviconColors(faviconUrl: string | null | undefined): Favicon
 
     // Extract colors
     extractFaviconColors(faviconUrl).then((extractedColors) => {
-      colorCache.set(faviconUrl, extractedColors);
+      cacheFaviconColors(faviconUrl, extractedColors);
       setColors(extractedColors);
     });
   }, [faviconUrl, cachedColors]);
