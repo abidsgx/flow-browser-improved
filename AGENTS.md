@@ -37,6 +37,29 @@ Standard dev commands are in `package.json`. Quick reference:
 - There are no automated test suites (no `test` script in `package.json`). Validation is done via `bun lint` and `bun typecheck`.
 - Animation imports use `motion/react` (not `framer-motion`).
 
+### `src/main/blocklist/blocklist.json` is user-owned
+
+Each user supplies their own blocklist, so the tracked copy in the repo is only a placeholder. Two things make this work, and both are easy to break:
+
+- **It must stay tracked.** `src/main/blocklist/blocker.ts` imports it statically, so the file has to exist or the build fails. That is why it appears in `.gitignore` anyway: the entry is there to document intent, not to untrack the file.
+- **It must be a valid JSON array of strings** (`["example.com"]` or `[]`). A bare string such as `example.com` is not valid JSON and breaks the build for fresh clones.
+
+Local edits are protected with git's `skip-worktree` flag, because `.gitignore` alone does nothing for a tracked file — a rebase or pull will silently overwrite the local list. Check it with `git ls-files -v src/main/blocklist/blocklist.json` (a leading `S` means it is skipped).
+
+```sh
+# Normal case: just edit the file, git ignores it.
+# Before pulling a change to this path from upstream, temporarily unskip it:
+git update-index --no-skip-worktree src/main/blocklist/blocklist.json
+git pull
+git update-index --skip-worktree src/main/blocklist/blocklist.json
+```
+
+Do not commit a populated blocklist by accident. If that happens, restore the placeholder with `git checkout HEAD -- src/main/blocklist/blocklist.json`.
+
+### Measuring memory usage
+
+Tab renderers dominate RAM, and source inspection cannot quantify that. Start the app with `FLOW_MEMORY_MONITOR=1` to print a periodic report that correlates `app.getAppMetrics()` pids with tab web contents, showing per-process-type totals plus the largest individual processes with their tab URLs and awake/asleep counts. It is opt-in and costs nothing when the variable is unset. See `src/main/modules/memory-monitor.ts`.
+
 ## Cursor Cloud specific instructions (Ignore if not running on Cursor Cloud)
 
 - The VM already has a display at `DISPLAY=:1`. Run `bun dev` directly; no `xvfb-run` wrapper is needed.
