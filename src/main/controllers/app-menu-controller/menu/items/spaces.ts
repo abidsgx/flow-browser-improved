@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { canUserSwitchWindowSpace, setWindowSpace } from "@/ipc/session/spaces";
 import path from "path";
 import { readFile } from "fs/promises";
+import { phosphorIconNameFromPascalCase } from "~/utility";
 import { spacesController } from "@/controllers/spaces-controller";
 import { profilesController } from "@/controllers/profiles-controller";
 import { browserWindowsManager, windowsController } from "@/controllers/windows-controller";
@@ -20,19 +21,11 @@ interface Space {
 /**
  * Icon utilities
  *
- * Phosphor names are the kebab-case form of the PascalCase name
- * ("DotOutline" -> "dot-outline"). Deriving it keeps the ~450KB
- * `@phosphor-icons/core` metadata array out of the main process heap.
+ * `phosphorIconNameFromPascalCase` is shared with the renderer so that the SVG
+ * resolved here and the SVG URL the renderer looks up always name the same file.
  */
-function getIconNameFromPascalCase(pascalCaseName: string): string {
-  return pascalCaseName
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
-    .toLowerCase();
-}
-
 function getPhosphorIconPath(pascalName: string): string | null {
-  const name = getIconNameFromPascalCase(pascalName);
+  const name = phosphorIconNameFromPascalCase(pascalName);
   if (!name) return null;
 
   try {

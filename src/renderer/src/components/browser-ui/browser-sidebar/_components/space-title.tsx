@@ -7,12 +7,7 @@ export function SpaceTitle({ space }: { space: Space | null }) {
 
   return (
     <div className={cn("flex flex-row gap-1.5 items-center", "w-full h-6", "px-2 mt-1.5 py-1")}>
-      <SpaceIcon
-        fallbackId={undefined}
-        id={space.icon}
-        strokeWidth={2.5}
-        className="space-icon-color dark:text-white! size-4.5"
-      />
+      <SpaceIcon fallbackId={undefined} id={space.icon} className="space-icon-color dark:text-white! size-4.5" />
       <span className="font-bold text-black/50 dark:text-white/50 h-5 leading-5 text-sm">{space.name}</span>
     </div>
   );

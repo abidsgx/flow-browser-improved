@@ -123,7 +123,6 @@ function SpaceButton({ space, isActive, compact }: SpaceButtonProps) {
           >
             <SpaceIcon
               id={space.icon}
-              strokeWidth={2.5}
               className={cn(
                 "size-4 transition-colors duration-300",
                 "text-black/50 dark:text-white/50",
